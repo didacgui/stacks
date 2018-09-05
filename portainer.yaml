@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  portainer:
+    image: portainer/portainer
+    ports:
+      - "9000:9000"
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/srv/docker/volum
+
+volumes:
+  portainer_data:
+
+  deploy:
+   labels:
+          traefik.port: 9000
+          traefik.docker.network: 'proxy'
+          traefik.frontend.rule: 'Host:portainer.zitrolab.lan'
+networks:
+  proxy:
+    external: true

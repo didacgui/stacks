@@ -1,0 +1,59 @@
+version: '3.5'
+services:
+  telegraf:
+    image: telegraf
+    volumes:
+      - /srv/docker/telegraf/conf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "container_group=TIG"
+    deploy:
+      mode: global
+
+  influxdb:
+    image: influxdb
+    environment:
+      - INFLUXDB_DB=telegraf
+      - INFLUXDB_USER=telegraf
+      - INFLUXDB_USER_PASSWORD=TelegrafPassword
+    volumes:
+      - /srv/docker/influxdb/data:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+    networks:
+      - backend
+    labels:
+      - "container_group=TIG"
+
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://grafana.zitrolab.lan
+      - GF_SECURITY_ADMIN_PASSWORD=GrafanaPassword
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-worldmap-panel,raintank-worldping-app,jdbranham-diagram-panel
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_SERVER_DOMAIN=zitrolab.lan
+    volumes:
+      - /srv/docker/grafana:/var/lib/grafana
+    networks:
+      - proxy
+      - backend
+    ports:
+      - 3000:3000
+    labels:
+      - "traefik.backend=tick"
+      - "traefik.frontend.rule=Host:grafana.zitrolab.lan"
+      - "traefik.docker.network=proxy"
+      - "traefik.port=3000"
+      - "container_group=TIG"
+
+networks:
+  backend:
+    driver: 'overlay'
+  proxy:
+    external: true
+
